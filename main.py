@@ -1,6 +1,10 @@
 import cv2  # Importação do Opencv-Python
 import numpy as np
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
+
 
 """ Classe que fará o carregamento e leitura da imagem"""
 
@@ -39,6 +43,7 @@ class FormDetector:
             'triangulos': 0,
             'quadrados': 0,
             'circulos': 0,
+            'pentagono': 0,
             'outros': 0
         }
 
@@ -51,6 +56,9 @@ class FormDetector:
                 cv2.drawContours(imagem_original, [contorno], 0, (0, 255, 0), 2)
             elif len(aproximacao) == 4:
                 formas['quadrados'] += 1
+                cv2.drawContours(imagem_original, [contorno], 0, (255, 0, 0), 2)
+            elif len(aproximacao) == 5:
+                formas['pentagono'] += 1
                 cv2.drawContours(imagem_original, [contorno], 0, (255, 0, 0), 2)
             elif len(aproximacao) > 4:
                 area = cv2.contourArea(contorno)
@@ -75,33 +83,50 @@ class FormDetector:
 Formas detectadas:
 Triangulos: {formas['triangulos']}
 Quadrados: {formas['quadrados']}
+Pentagono: {formas['pentagono']}
 Circulos: {formas['circulos']}
 Outros: {formas['outros']}
 """
-        plt.text(imagem_original.shape[1],
-                 imagem_original.shape[0],
+        plt.text(10,
+                 imagem_original.shape[0] - 10,
                  legenda,
-                 fontsize = 10,
-                 verticalalignment = 'bottom',
-                 horizontalalignment = 'right')
+                 fontsize=10,
+                 verticalalignment='bottom',
+                 horizontalalignment='left',
+                 bbox=dict(facecolor='white', alpha=0.5))
 
         plt.tight_layout()
         plt.show()
 
+
 def main():
-    caminho_imagem = 'formas.jpg'
     detector = FormDetector()
 
-    try:
-        imagem = detector.load_image(caminho_imagem)
-        imagem_cinza = detector.convert_to_grayscale(imagem)
-        imagem_blur = detector.apply_blur(imagem_cinza)
-        imagem_bordas = detector.edge_detection(imagem_blur)
-        contornos = detector.find_lines(imagem_bordas)
-        formas = detector.classify_forms(contornos, imagem)
-        detector.view_results(imagem, formas)
-    except Exception as e:
-        print(f'Erro no processamento da imagem: {e}')
+    def load_and_process_image():
+        caminho_imagem = filedialog.askopenfilename(title="Selecione uma imagem",
+                                                    filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
+
+        if caminho_imagem:
+            try:
+                imagem = detector.load_image(caminho_imagem)
+                imagem_cinza = detector.convert_to_grayscale(imagem)
+                imagem_blur = detector.apply_blur(imagem_cinza)
+                imagem_bordas = detector.edge_detection(imagem_blur)
+                contornos = detector.find_lines(imagem_bordas)
+                formas = detector.classify_forms(contornos, imagem)
+                detector.view_results(imagem, formas)
+            except Exception as e:
+                messagebox.showerror("Erro", f'Erro no processamento da imagem: {e}')
+
+    # Configuração da interface gráfica
+    root = tk.Tk()
+    root.title("Detector de Formas")
+
+    load_button = tk.Button(root, text="Carregar Imagem", command=load_and_process_image)
+    load_button.pack(pady=20)
+
+    root.mainloop()
+
 
 if __name__ == "__main__":
-        main()
+    main()
